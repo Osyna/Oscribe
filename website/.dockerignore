@@ -1,0 +1,8 @@
+# Ignore everything
+**
+
+# Allow only necessary files for the build
+!index.html
+!styles/
+!scripts/
+!tailwind.config.cjs
