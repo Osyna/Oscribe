@@ -4,6 +4,15 @@ set -euo pipefail
 SERVICE_NAME="oscribe"
 SERVICE_FILE="$HOME/.config/systemd/user/${SERVICE_NAME}.service"
 UINPUT_RULE="/etc/udev/rules.d/99-uinput-input-group.rules"
+OSCRIBE_SRC=""
+CLEANUP_TMPDIR=""
+
+# Non-interactive detection (e.g. curl | bash)
+if [[ ! -t 0 ]]; then
+    NON_INTERACTIVE=true
+else
+    NON_INTERACTIVE=false
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -16,6 +25,70 @@ info()  { echo -e "${GREEN}==>${NC} $*"; }
 warn()  { echo -e "${YELLOW}==>${NC} $*"; }
 error() { echo -e "${RED}==>${NC} $*"; }
 step()  { echo -e "${BLUE}==>${NC} $*"; }
+
+# Prompt yes/no — auto-accepts default when non-interactive (curl | bash)
+# Usage: prompt_yn "Install them now?" "y"   → default=yes
+#        prompt_yn "Install anyway?" "n"      → default=no
+prompt_yn() {
+    local prompt="$1" default="${2:-y}"
+    if $NON_INTERACTIVE; then
+        info "(non-interactive) auto-accepting default: $default"
+        [[ "$default" == "y" ]] && return 0 || return 1
+    fi
+    local hint
+    [[ "$default" == "y" ]] && hint="[Y/n]" || hint="[y/N]"
+    local choice
+    read -rp "$prompt $hint " choice </dev/tty
+    case "${choice:-$default}" in
+        [yY]*) return 0 ;;
+        *)     return 1 ;;
+    esac
+}
+
+# --- Source acquisition ---
+
+cleanup_source() {
+    if [[ -n "$CLEANUP_TMPDIR" ]] && [[ -d "$CLEANUP_TMPDIR" ]]; then
+        rm -rf "$CLEANUP_TMPDIR"
+    fi
+}
+
+acquire_source() {
+    # Already in the oscribe repo?
+    if [[ -f "pyproject.toml" ]] && grep -q 'name = "oscribe"' pyproject.toml 2>/dev/null; then
+        OSCRIBE_SRC="$(pwd)"
+        info "Installing from local source: $OSCRIBE_SRC"
+        return
+    fi
+
+    step "Downloading oscribe source..."
+    CLEANUP_TMPDIR="$(mktemp -d)"
+    trap cleanup_source EXIT
+
+    local repo_url="https://github.com/Osyna/Oscribe"
+
+    if has_cmd git; then
+        git clone --depth 1 "$repo_url" "$CLEANUP_TMPDIR/oscribe"
+        OSCRIBE_SRC="$CLEANUP_TMPDIR/oscribe"
+    elif has_cmd curl; then
+        curl -fSL "$repo_url/archive/refs/heads/main.tar.gz" -o "$CLEANUP_TMPDIR/oscribe.tar.gz"
+        tar xzf "$CLEANUP_TMPDIR/oscribe.tar.gz" -C "$CLEANUP_TMPDIR"
+        OSCRIBE_SRC="$CLEANUP_TMPDIR/Oscribe-main"
+    elif has_cmd wget; then
+        wget -q "$repo_url/archive/refs/heads/main.tar.gz" -O "$CLEANUP_TMPDIR/oscribe.tar.gz"
+        tar xzf "$CLEANUP_TMPDIR/oscribe.tar.gz" -C "$CLEANUP_TMPDIR"
+        OSCRIBE_SRC="$CLEANUP_TMPDIR/Oscribe-main"
+    else
+        error "Cannot download source: git, curl, or wget required."
+        exit 1
+    fi
+
+    if [[ ! -f "$OSCRIBE_SRC/pyproject.toml" ]]; then
+        error "Downloaded source is missing pyproject.toml."
+        exit 1
+    fi
+    info "Source acquired: $OSCRIBE_SRC"
+}
 
 # --- Distro & display server detection ---
 
@@ -156,6 +229,13 @@ uninstall() {
         info "Removed $SERVICE_FILE"
     fi
 
+    local dropin_dir
+    dropin_dir="$(dirname "$SERVICE_FILE")/${SERVICE_NAME}.service.d"
+    if [[ -d "$dropin_dir" ]]; then
+        rm -rf "$dropin_dir"
+        info "Removed $dropin_dir"
+    fi
+
     systemctl --user daemon-reload
 
     if has_cmd uv; then
@@ -178,7 +258,7 @@ ensure_systemd() {
         error "systemd not found. oscribe's install script requires systemd for service management."
         echo
         info "You can still install and run manually:"
-        echo "  uv tool install ."
+        echo "  uv tool install /path/to/oscribe"
         echo "  oscribe"
         exit 1
     fi
@@ -294,16 +374,12 @@ ensure_system_deps() {
     if [[ ${#to_install[@]} -gt 0 ]]; then
         echo
         warn "Missing system packages: ${to_install[*]}"
-        read -rp "Install them now? [Y/n] " choice
-        case "${choice:-y}" in
-            [nN]*)
-                error "Cannot continue without required packages."
-                exit 1
-                ;;
-            *)
-                pkg_install "${to_install[@]}"
-                ;;
-        esac
+        if prompt_yn "Install them now?" "y"; then
+            pkg_install "${to_install[@]}"
+        else
+            error "Cannot continue without required packages."
+            exit 1
+        fi
     fi
 
     # --- Verify everything landed ---
@@ -388,14 +464,11 @@ os.close(fd)
         fi
         echo
 
-        read -rp "Apply these changes? [Y/n] " choice
-        case "${choice:-y}" in
-            [nN]*)
-                warn "Skipping ydotool setup — it may not work without /dev/uinput access."
-                warn "Auto-type mode will fall back to wtype (less compatible)."
-                return 0
-                ;;
-        esac
+        if ! prompt_yn "Apply these changes?" "y"; then
+            warn "Skipping ydotool setup — it may not work without /dev/uinput access."
+            warn "Auto-type mode will fall back to wtype (less compatible)."
+            return 0
+        fi
 
         # Add user to input group
         if ! id -nG "$USER" | grep -qw input; then
@@ -650,16 +723,12 @@ install_rocm_ctranslate2() {
             warn "but faster-whisper requires: ${ct2_constraint}"
             warn "Installing v${ct2_version} will replace the current ctranslate2."
             echo
-            read -rp "Install anyway (downgrade)? [y/N] " choice
-            case "${choice:-n}" in
-                [yY]*)
-                    info "Proceeding with v${ct2_version}..."
-                    ;;
-                *)
-                    info "Skipping ROCm wheel. Using CPU-only."
-                    return 0
-                    ;;
-            esac
+            if prompt_yn "Install anyway (downgrade)?" "n"; then
+                info "Proceeding with v${ct2_version}..."
+            else
+                info "Skipping ROCm wheel. Using CPU-only."
+                return 0
+            fi
             ;;
         ERROR)
             local errmsg="${result_line#ERROR:}"
@@ -776,6 +845,7 @@ install() {
     ensure_systemd
     ensure_python
     ensure_uv
+    acquire_source
     ensure_system_deps
     ensure_ydotool_access
 
@@ -834,11 +904,11 @@ install() {
 
     if has_cmd uv; then
         info "Installing oscribe via uv..."
-        uv tool install ".${pip_extra}" --force --reinstall
+        uv tool install "${OSCRIBE_SRC}${pip_extra}" --force --reinstall
     else
         info "Installing oscribe via pip..."
-        local pip_args=(install --user ".${pip_extra}")
-        if pip install --user --dry-run "." 2>&1 | grep -q "externally-managed"; then
+        local pip_args=(install --user "${OSCRIBE_SRC}${pip_extra}")
+        if pip install --user --dry-run "$OSCRIBE_SRC" 2>&1 | grep -q "externally-managed"; then
             warn "PEP 668 detected — using --break-system-packages (consider using uv instead)"
             pip_args+=(--break-system-packages)
         fi
@@ -866,39 +936,32 @@ install() {
     fi
     info "Installed: $oscribe_bin"
 
-    # Create systemd user service
+    # Install systemd user service from static template
+    mkdir -p "$(dirname "$SERVICE_FILE")"
+    cp "$OSCRIBE_SRC/contrib/oscribe.service" "$SERVICE_FILE"
+    # Patch ExecStart to the actual binary path
+    sed -i "s|ExecStart=.*|ExecStart=$oscribe_bin|" "$SERVICE_FILE"
+    info "Created $SERVICE_FILE"
+
+    # ROCm environment drop-in for AMD GPUs
     # NOTE: No LD_LIBRARY_PATH for CUDA — the Python code auto-detects
     # pip-bundled nvidia libs (nvidia-cublas-cu12, nvidia-cudnn-cu12) and
     # loads them at import time, avoiding version mismatches with system
     # or third-party CUDA installations (e.g. Ollama).
-    # For ROCm: we set ROCM_PATH and LD_LIBRARY_PATH so the CTranslate2
-    # ROCm build can find the HIP/ROCm runtime libraries.
-    local extra_env=""
     if [[ "$gpu_type" == "amd" ]] && $has_rocm; then
         local rocm_path="${ROCM_PATH:-/opt/rocm}"
         if [[ -d "$rocm_path" ]]; then
-            extra_env="Environment=ROCM_PATH=${rocm_path}
-Environment=LD_LIBRARY_PATH=${rocm_path}/lib"
+            local dropin_dir
+            dropin_dir="$(dirname "$SERVICE_FILE")/${SERVICE_NAME}.service.d"
+            mkdir -p "$dropin_dir"
+            cat > "$dropin_dir/rocm.conf" <<EOF
+[Service]
+Environment=ROCM_PATH=${rocm_path}
+Environment=LD_LIBRARY_PATH=${rocm_path}/lib
+EOF
+            info "Created ROCm drop-in: $dropin_dir/rocm.conf"
         fi
     fi
-
-    mkdir -p "$(dirname "$SERVICE_FILE")"
-    cat > "$SERVICE_FILE" <<EOF
-[Unit]
-Description=Oscribe speech-to-text service
-After=graphical-session.target
-
-[Service]
-Type=simple
-ExecStart=$oscribe_bin
-Restart=on-failure
-RestartSec=3
-Environment=PYTHONUNBUFFERED=1
-${extra_env}
-[Install]
-WantedBy=default.target
-EOF
-    info "Created $SERVICE_FILE"
 
     # Enable and start
     systemctl --user daemon-reload
@@ -922,11 +985,11 @@ EOF
 
 if is_installed; then
     warn "oscribe service is already installed."
-    read -rp "Uninstall? [y/N] " choice
-    case "$choice" in
-        [yY]*) uninstall ;;
-        *)     info "No changes made." ;;
-    esac
+    if prompt_yn "Uninstall?" "n"; then
+        uninstall
+    else
+        info "No changes made."
+    fi
 else
     install
 fi
