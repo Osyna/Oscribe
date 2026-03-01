@@ -1,5 +1,9 @@
 # oscribe
 
+https://github.com/Osyna/Oscribe/raw/main/assets/showcase.mp4
+
+![Screenshot](assets/screenshot.png)
+
 Fast speech-to-text dictation for Linux with system tray integration. Powered by faster-whisper running on GPU (CUDA) or CPU.
 
 Press a hotkey, speak, and the transcribed text is either typed into the focused window or copied to your clipboard. Works across Wayland compositors (Hyprland, Sway, KDE, GNOME) and X11.
