@@ -5,18 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OScribe - Free Open Source Speech-to-Text</title>
-    <!-- DEV: uncomment these 3 lines for local development without Docker build -->
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
-    <!-- <script src="scripts/tailwind.config.js"></script> -->
-    <!-- <link rel="stylesheet" href="styles/style.css"> -->
-
-    <!-- PROD: compiled Tailwind CSS (built by Docker) -->
     <link rel="stylesheet" href="styles/output.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body
@@ -35,7 +28,8 @@
                 </div>
                 <div class="flex items-center gap-4 lg:gap-8 text-sm font-medium text-slate-600">
                     <button id="features-nav-btn" class="hover:text-brand-600 transition-colors">Features</button>
-                    <a href="#" class="hidden sm:flex hover:text-brand-600 transition-colors items-center gap-1">
+                    <a href="https://github.com/Osyna/Oscribe"
+                        class="hidden sm:flex hover:text-brand-600 transition-colors items-center gap-1">
                         GitHub <i data-lucide="external-link" class="w-3 h-3"></i>
                     </a>
                 </div>
@@ -46,7 +40,7 @@
                     <i data-lucide="coffee" class="w-4 h-4"></i>
                     Support
                 </a>
-                <a href="#download"
+                <a href="https://github.com/Osyna/Oscribe/archive/refs/heads/main.zip"
                     class="bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-6 py-2 sm:py-2.5 font-medium transition-all transform hover:-translate-y-0.5 shadow-lg shadow-slate-900/20 text-xs sm:text-sm flex items-center gap-2">
                     <span class="hidden sm:inline">Download</span>
                     <i data-lucide="download" class="w-4 h-4"></i>
@@ -101,12 +95,12 @@
                             </p>
                             <div
                                 class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-12 sm:mb-16">
-                                <a id="download" href="#"
+                                <a id="download" href="https://github.com/Osyna/Oscribe/archive/refs/heads/main.zip"
                                     class="bg-slate-900 hover:bg-slate-800 text-white px-6 sm:px-8 py-3.5 sm:py-4 font-medium transition-all transform hover:-translate-y-1 shadow-xl shadow-slate-900/20 flex items-center justify-center gap-3">
                                     <i data-lucide="arrow-down-to-line" class="w-5 h-5"></i>
                                     Direct Download
                                 </a>
-                                <a href="https://github.com" target="_blank"
+                                <a href="https://github.com/Osyna/Oscribe" target="_blank"
                                     class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-6 sm:px-8 py-3.5 sm:py-4 font-medium transition-all transform hover:-translate-y-1 shadow-sm flex items-center justify-center gap-3">
                                     <i data-lucide="github" class="w-5 h-5"></i>
                                     View Source
@@ -128,7 +122,14 @@
                                         Keep it free</p>
                                     <a href="https://ko-fi.com/Q5Q21UZP02" target="_blank"
                                         class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-sm font-medium transition-colors">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                                            <path d="M10 2v2" />
+                                            <path d="M14 2v2" />
+                                            <path
+                                                d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />
+                                            <path d="M6 2v2" />
+                                        </svg>
                                         Support on Ko-fi
                                     </a>
                                 </div>
