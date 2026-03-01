@@ -1,6 +1,6 @@
 # oscribe
 
-https://github.com/Osyna/Oscribe/raw/main/assets/showcase.mp4
+https://github.com/user-attachments/assets/570ed198-7781-48f0-b12d-82b6aca143fd
 
 ![Screenshot](assets/screenshot.png)
 
