@@ -48,7 +48,9 @@ def main() -> None:
 
     try:
         while True:
-            console.print("\n[bold white on blue] Ready [/] Press Enter to START (Ctrl+C to quit)")
+            console.print(
+                "\n[bold white on blue] Ready [/] Press Enter to START (Ctrl+C to quit)"
+            )
             try:
                 input()
             except EOFError:

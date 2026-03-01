@@ -1,4 +1,5 @@
 """Procedural tray icon — microphone + AI sparkle motif."""
+
 from __future__ import annotations
 
 from PyQt6.QtCore import QPointF, QRectF, Qt

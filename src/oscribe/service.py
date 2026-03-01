@@ -3,14 +3,11 @@ from __future__ import annotations
 import logging
 import math
 import os
+import queue
 import signal
 import sys
-import queue
 import threading
 import time
-from pathlib import Path
-
-logger = logging.getLogger("oscribe")
 
 import numpy as np
 import pyperclip
@@ -27,21 +24,25 @@ from PyQt6.QtCore import (
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-from oscribe.audio.capture import AudioCapture
 from oscribe.audio import sounds
+from oscribe.audio.capture import AudioCapture
 from oscribe.audio.transcriber import Transcriber
-from oscribe.config import Config, _DEFAULT_CONFIG_PATH
+from oscribe.config import _DEFAULT_CONFIG_PATH, Config
 from oscribe.desktop import DesktopHelper
-from oscribe.gui.icon import create_tray_icon
 from oscribe.gui.download import ModelDownloadDialog
+from oscribe.gui.icon import create_tray_icon
 from oscribe.gui.settings import SettingsWindow
 from oscribe.gui.window import RecordingWindow
+
+logger = logging.getLogger("oscribe")
+
 
 def _ipc_address() -> str:
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     if runtime:
         return f"ipc://{runtime}/oscribe.ipc"
     return "ipc:///tmp/oscribe_service.ipc"
+
 
 IPC_ADDRESS = _ipc_address()
 
@@ -59,6 +60,7 @@ class _IPCWorker(QObject):
         except zmq.error.ZMQError:
             logger.error("IPC socket already in use — is another instance running?")
             import os
+
             os._exit(1)
         while True:
             try:
@@ -175,13 +177,19 @@ class OscribeService:
         try:
             import huggingface_hub
             from faster_whisper.utils import _MODELS
+
             repo_id = _MODELS.get(self.cfg.model, self.cfg.model)
             # Check if already cached (no download needed)
             huggingface_hub.snapshot_download(
                 repo_id,
                 local_files_only=True,
-                allow_patterns=["config.json", "model.bin", "tokenizer.json",
-                                "preprocessor_config.json", "vocabulary.*"],
+                allow_patterns=[
+                    "config.json",
+                    "model.bin",
+                    "tokenizer.json",
+                    "preprocessor_config.json",
+                    "vocabulary.*",
+                ],
             )
             # Cached — load directly
             logger.info("Loading model (cached)...")
@@ -332,10 +340,13 @@ class OscribeService:
             audio = np.concatenate(chunks)
             logger.debug(
                 "Audio: %d samples @ %dHz (%.1fs)",
-                len(audio), self.capture.sample_rate,
+                len(audio),
+                self.capture.sample_rate,
                 len(audio) / self.capture.sample_rate,
             )
-            text = self.transcriber.transcribe(audio, sample_rate=self.capture.sample_rate)
+            text = self.transcriber.transcribe(
+                audio, sample_rate=self.capture.sample_rate
+            )
         else:
             logger.debug("No audio chunks captured.")
 
@@ -343,13 +354,15 @@ class OscribeService:
             if self.cfg.output_mode == "type":
                 # Hide overlay BEFORE typing so it doesn't steal focus
                 QMetaObject.invokeMethod(
-                    self.window, "hide", Qt.ConnectionType.QueuedConnection,
+                    self.window,
+                    "hide",
+                    Qt.ConnectionType.QueuedConnection,
                 )
                 time.sleep(0.08)  # let compositor process the unmap
 
             # In streaming mode, only type the remaining unconfirmed text
             if self._stream_confirmed_len > 0:
-                remaining = text[self._stream_confirmed_len:]
+                remaining = text[self._stream_confirmed_len :]
                 self._stream_confirmed_len = 0
                 self._stream_prev_text = ""
                 if remaining.strip():
@@ -361,12 +374,16 @@ class OscribeService:
                 sounds.play_done()
             if self.cfg.output_mode != "type":
                 QMetaObject.invokeMethod(
-                    self.window, "set_state",
-                    Qt.ConnectionType.QueuedConnection, Q_ARG(str, "done"),
+                    self.window,
+                    "set_state",
+                    Qt.ConnectionType.QueuedConnection,
+                    Q_ARG(str, "done"),
                 )
                 time.sleep(0.5)
         QMetaObject.invokeMethod(
-            self.window, "hide", Qt.ConnectionType.QueuedConnection,
+            self.window,
+            "hide",
+            Qt.ConnectionType.QueuedConnection,
         )
 
     # -- streaming transcription ----------------------------------------
@@ -403,13 +420,15 @@ class OscribeService:
     def _stream_transcribe(self, audio: np.ndarray, sample_rate: int) -> None:
         """Background thread: transcribe and type confirmed text."""
         confirmed, full = self.transcriber.transcribe_streaming(
-            audio, sample_rate=sample_rate, prev_text=self._stream_prev_text,
+            audio,
+            sample_rate=sample_rate,
+            prev_text=self._stream_prev_text,
         )
         self._stream_prev_text = full
 
         # Type only the newly confirmed portion
         if confirmed and len(confirmed) > self._stream_confirmed_len:
-            new_text = confirmed[self._stream_confirmed_len:]
+            new_text = confirmed[self._stream_confirmed_len :]
             # Add trailing space so next chunk appends cleanly
             if not new_text.endswith(" "):
                 new_text += " "

@@ -14,6 +14,7 @@ logger = logging.getLogger("oscribe")
 # Detection helpers
 # ---------------------------------------------------------------------------
 
+
 def _display_server() -> str:
     """Return 'wayland' or 'x11'."""
     if os.environ.get("WAYLAND_DISPLAY"):
@@ -51,7 +52,8 @@ def _ydotoold_running() -> bool:
     try:
         r = subprocess.run(
             ["pgrep", "-x", "ydotoold"],
-            capture_output=True, timeout=1,
+            capture_output=True,
+            timeout=1,
         )
         return r.returncode == 0
     except Exception:
@@ -88,7 +90,9 @@ def _is_xwayland_window(window_address: str) -> bool | None:
     try:
         r = subprocess.run(
             ["hyprctl", "clients", "-j"],
-            capture_output=True, text=True, timeout=1,
+            capture_output=True,
+            text=True,
+            timeout=1,
         )
         if r.returncode != 0:
             return None
@@ -104,6 +108,7 @@ def _is_xwayland_window(window_address: str) -> bool | None:
 # Public: DesktopHelper
 # ---------------------------------------------------------------------------
 
+
 class DesktopHelper:
     """One-stop helper for clipboard ops, paste simulation, and window focus.
 
@@ -111,12 +116,31 @@ class DesktopHelper:
     """
 
     # Window classes that use Ctrl+Shift+V for paste instead of Ctrl+V.
-    _TERMINAL_CLASSES = frozenset({
-        "kitty", "alacritty", "foot", "wezterm", "st", "urxvt",
-        "xterm", "gnome-terminal", "konsole", "terminator", "tilix",
-        "sakura", "termite", "guake", "tilda", "xfce4-terminal",
-        "lxterminal", "mate-terminal", "rio", "ghostty", "contour",
-    })
+    _TERMINAL_CLASSES = frozenset(
+        {
+            "kitty",
+            "alacritty",
+            "foot",
+            "wezterm",
+            "st",
+            "urxvt",
+            "xterm",
+            "gnome-terminal",
+            "konsole",
+            "terminator",
+            "tilix",
+            "sakura",
+            "termite",
+            "guake",
+            "tilda",
+            "xfce4-terminal",
+            "lxterminal",
+            "mate-terminal",
+            "rio",
+            "ghostty",
+            "contour",
+        }
+    )
 
     def __init__(self) -> None:
         self.display = _display_server()
@@ -126,7 +150,9 @@ class DesktopHelper:
         # Clipboard read/write commands ---------------------------------
         if self.display == "wayland":
             self._clip_copy = ["wl-copy", "--"] if _has("wl-copy") else None
-            self._clip_paste = ["wl-paste", "--no-newline"] if _has("wl-paste") else None
+            self._clip_paste = (
+                ["wl-paste", "--no-newline"] if _has("wl-paste") else None
+            )
             self._clip_clear = ["wl-copy", "--clear"] if _has("wl-copy") else None
         else:
             if _has("xclip"):
@@ -154,7 +180,10 @@ class DesktopHelper:
 
         logger.info(
             "Desktop: %s, compositor=%s, paste=%s, focus=%s",
-            self.display, self.compositor, self._paste_tools, self._focus_strategy,
+            self.display,
+            self.compositor,
+            self._paste_tools,
+            self._focus_strategy,
         )
 
         if not self._paste_tools:
@@ -203,8 +232,7 @@ class DesktopHelper:
             return None
 
         # On Hyprland, check if target is XWayland — wtype won't work there
-        if (window_id and self.compositor == "hyprland"
-                and len(self._paste_tools) > 1):
+        if window_id and self.compositor == "hyprland" and len(self._paste_tools) > 1:
             xwl = _is_xwayland_window(window_id)
             if xwl is True:
                 # Need evdev (ydotool) or X11 (xdotool) for XWayland
@@ -266,7 +294,9 @@ class DesktopHelper:
             if self._focus_strategy == "hyprctl":
                 r = subprocess.run(
                     ["hyprctl", "activewindow", "-j"],
-                    capture_output=True, text=True, timeout=1,
+                    capture_output=True,
+                    text=True,
+                    timeout=1,
                 )
                 if r.returncode == 0:
                     info = json.loads(r.stdout)
@@ -276,7 +306,9 @@ class DesktopHelper:
             elif self._focus_strategy == "swaymsg":
                 r = subprocess.run(
                     ["swaymsg", "-t", "get_tree"],
-                    capture_output=True, text=True, timeout=1,
+                    capture_output=True,
+                    text=True,
+                    timeout=1,
                 )
                 if r.returncode == 0:
                     tree = json.loads(r.stdout)
@@ -287,7 +319,9 @@ class DesktopHelper:
             elif self._focus_strategy == "xdotool":
                 r = subprocess.run(
                     ["xdotool", "getactivewindow"],
-                    capture_output=True, text=True, timeout=1,
+                    capture_output=True,
+                    text=True,
+                    timeout=1,
                 )
                 if r.returncode == 0:
                     return r.stdout.strip()
@@ -303,17 +337,23 @@ class DesktopHelper:
             if self._focus_strategy == "hyprctl":
                 subprocess.run(
                     ["hyprctl", "dispatch", "focuswindow", f"address:{window_id}"],
-                    capture_output=True, text=True, timeout=1,
+                    capture_output=True,
+                    text=True,
+                    timeout=1,
                 )
             elif self._focus_strategy == "swaymsg":
                 subprocess.run(
-                    ["swaymsg", f'[con_id={window_id}] focus'],
-                    capture_output=True, text=True, timeout=1,
+                    ["swaymsg", f"[con_id={window_id}] focus"],
+                    capture_output=True,
+                    text=True,
+                    timeout=1,
                 )
             elif self._focus_strategy == "xdotool":
                 subprocess.run(
                     ["xdotool", "windowactivate", window_id],
-                    capture_output=True, text=True, timeout=1,
+                    capture_output=True,
+                    text=True,
+                    timeout=1,
                 )
         except Exception:
             pass
@@ -339,8 +379,14 @@ class DesktopHelper:
             elif tool == "ydotool":
                 # Map symbolic names to evdev keycodes
                 keymap = {
-                    "ctrl": 29, "shift": 42, "alt": 56, "super": 125,
-                    "v": 47, "Insert": 110, "c": 46, "a": 30,
+                    "ctrl": 29,
+                    "shift": 42,
+                    "alt": 56,
+                    "super": 125,
+                    "v": 47,
+                    "Insert": 110,
+                    "c": 46,
+                    "a": 30,
                 }
                 parts = keys.split("+")
                 evseq = []
@@ -354,13 +400,15 @@ class DesktopHelper:
                     evseq.append(f"{code}:0")
                 r = subprocess.run(
                     ["ydotool", "key"] + evseq,
-                    capture_output=True, timeout=2,
+                    capture_output=True,
+                    timeout=2,
                 )
                 return r.returncode == 0
             elif tool == "xdotool":
                 r = subprocess.run(
                     ["xdotool", "key", keys],
-                    capture_output=True, timeout=2,
+                    capture_output=True,
+                    timeout=2,
                 )
                 return r.returncode == 0
         except Exception:
@@ -413,19 +461,22 @@ class DesktopHelper:
             if tool == "wtype":
                 r = subprocess.run(
                     ["wtype", "--", text],
-                    capture_output=True, timeout=10,
+                    capture_output=True,
+                    timeout=10,
                 )
                 return r.returncode == 0
             elif tool == "ydotool":
                 r = subprocess.run(
                     ["ydotool", "type", "--", text],
-                    capture_output=True, timeout=10,
+                    capture_output=True,
+                    timeout=10,
                 )
                 return r.returncode == 0
             elif tool == "xdotool":
                 r = subprocess.run(
                     ["xdotool", "type", "--clearmodifiers", "--", text],
-                    capture_output=True, timeout=10,
+                    capture_output=True,
+                    timeout=10,
                 )
                 return r.returncode == 0
         except Exception as exc:
@@ -469,6 +520,7 @@ class DesktopHelper:
 # ---------------------------------------------------------------------------
 # Sway tree walker
 # ---------------------------------------------------------------------------
+
 
 def _sway_find_focused(node: dict) -> int | None:
     """Recursively find the focused container id in sway's tree."""

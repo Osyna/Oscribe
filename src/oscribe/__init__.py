@@ -4,6 +4,7 @@ import os as _os
 # Pre-load pip-installed NVIDIA libs so ctranslate2 can find them at runtime.
 # ROCm (AMD GPU) uses system-installed libs — no preloading needed.
 
+
 def _preload_nvidia_libs() -> None:
     from importlib.util import find_spec
 

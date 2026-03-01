@@ -1,9 +1,9 @@
 import random
 import subprocess
 
-from PyQt6.QtWidgets import QWidget, QApplication
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot, QRectF, QPointF
-from PyQt6.QtGui import QPainter, QColor, QPen
+from PyQt6.QtCore import QPointF, QRectF, Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QColor, QPainter, QPen
+from PyQt6.QtWidgets import QApplication, QWidget
 
 
 class RecordingWindow(QWidget):
@@ -61,13 +61,13 @@ class RecordingWindow(QWidget):
         p = self._padding
 
         positions = {
-            "top_left":       (p, p),
-            "top_center":     ((sw - ww) // 2, p),
-            "top_right":      (sw - ww - p, p),
-            "center":         ((sw - ww) // 2, (sh - wh) // 2),
-            "bottom_left":    (p, sh - wh - p),
-            "bottom_center":  ((sw - ww) // 2, sh - wh - p),
-            "bottom_right":   (sw - ww - p, sh - wh - p),
+            "top_left": (p, p),
+            "top_center": ((sw - ww) // 2, p),
+            "top_right": (sw - ww - p, p),
+            "center": ((sw - ww) // 2, (sh - wh) // 2),
+            "bottom_left": (p, sh - wh - p),
+            "bottom_center": ((sw - ww) // 2, sh - wh - p),
+            "bottom_right": (sw - ww - p, sh - wh - p),
         }
 
         x, y = positions.get(self._placement, positions["bottom_center"])
@@ -87,20 +87,26 @@ class RecordingWindow(QWidget):
         p = self._padding
 
         positions = {
-            "top_left":       (p, p),
-            "top_center":     ((sw - ww) // 2, p),
-            "top_right":      (sw - ww - p, p),
-            "center":         ((sw - ww) // 2, (sh - wh) // 2),
-            "bottom_left":    (p, sh - wh - p),
-            "bottom_center":  ((sw - ww) // 2, sh - wh - p),
-            "bottom_right":   (sw - ww - p, sh - wh - p),
+            "top_left": (p, p),
+            "top_center": ((sw - ww) // 2, p),
+            "top_right": (sw - ww - p, p),
+            "center": ((sw - ww) // 2, (sh - wh) // 2),
+            "bottom_left": (p, sh - wh - p),
+            "bottom_center": ((sw - ww) // 2, sh - wh - p),
+            "bottom_right": (sw - ww - p, sh - wh - p),
         }
 
         x, y = positions.get(self._placement, positions["bottom_center"])
         try:
             subprocess.Popen(
-                ['hyprctl', 'dispatch', 'movewindowpixel', f'exact {x} {y},title:LiveTranscriberOverlay'],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                [
+                    "hyprctl",
+                    "dispatch",
+                    "movewindowpixel",
+                    f"exact {x} {y},title:LiveTranscriberOverlay",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
         except FileNotFoundError:
             pass

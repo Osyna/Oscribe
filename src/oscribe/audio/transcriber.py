@@ -24,16 +24,16 @@ PUNCTUATION_PROMPTS: dict[str, str] = {
 }
 
 WHISPER_MODELS: dict[str, tuple[str, str]] = {
-    "tiny":              ("~75 MB",  "fastest"),
-    "base":              ("~150 MB", "fast"),
-    "small":             ("~500 MB", "balanced"),
-    "distil-small.en":   ("~250 MB", "fast, English only"),
-    "medium":            ("~1.5 GB", "accurate"),
-    "distil-medium.en":  ("~750 MB", "balanced, English only"),
-    "large-v3":          ("~3 GB",   "most accurate"),
-    "distil-large-v2":   ("~1.5 GB", "fast + accurate"),
-    "distil-large-v3":   ("~1.5 GB", "fast + accurate"),
-    "large-v3-turbo":    ("~1.6 GB", "fast + accurate"),
+    "tiny": ("~75 MB", "fastest"),
+    "base": ("~150 MB", "fast"),
+    "small": ("~500 MB", "balanced"),
+    "distil-small.en": ("~250 MB", "fast, English only"),
+    "medium": ("~1.5 GB", "accurate"),
+    "distil-medium.en": ("~750 MB", "balanced, English only"),
+    "large-v3": ("~3 GB", "most accurate"),
+    "distil-large-v2": ("~1.5 GB", "fast + accurate"),
+    "distil-large-v3": ("~1.5 GB", "fast + accurate"),
+    "large-v3-turbo": ("~1.6 GB", "fast + accurate"),
 }
 
 
@@ -101,7 +101,6 @@ def _make_progress_tqdm(
 
 
 class Transcriber:
-
     def __init__(
         self,
         model_size: str = "large-v3-turbo",
@@ -171,7 +170,11 @@ class Transcriber:
 
         repo_id = _MODELS.get(self.model_size, self.model_size)
 
-        tqdm_cls = _make_progress_tqdm(progress_callback) if progress_callback else _disabled_tqdm
+        tqdm_cls = (
+            _make_progress_tqdm(progress_callback)
+            if progress_callback
+            else _disabled_tqdm
+        )
 
         return huggingface_hub.snapshot_download(
             repo_id,
@@ -194,7 +197,8 @@ class Transcriber:
             language=self.language,
             initial_prompt=(
                 PUNCTUATION_PROMPTS.get(self.language)
-                if self.punctuation_hints else None
+                if self.punctuation_hints
+                else None
             ),
             beam_size=1,
             vad_filter=True,
@@ -224,6 +228,7 @@ class Transcriber:
         if sample_rate != 16_000:
             samples = int(len(audio) * 16_000 / sample_rate)
             from numpy import interp, linspace
+
             audio = interp(
                 linspace(0, len(audio), samples, endpoint=False),
                 np.arange(len(audio)),

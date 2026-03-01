@@ -6,9 +6,11 @@ from pathlib import Path
 
 import yaml
 
-_DEFAULT_CONFIG_PATH = Path(
-    os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")
-) / "oscribe" / "config.yaml"
+_DEFAULT_CONFIG_PATH = (
+    Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    / "oscribe"
+    / "config.yaml"
+)
 
 
 @dataclass

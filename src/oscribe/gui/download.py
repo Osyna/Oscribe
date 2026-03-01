@@ -25,7 +25,7 @@ class _DownloadWorker(QThread):
     """Downloads and loads a Whisper model in a background thread."""
 
     progress = pyqtSignal(int)
-    finished = pyqtSignal(str)   # local model path
+    finished = pyqtSignal(str)  # local model path
     error = pyqtSignal(str)
 
     def __init__(self, transcriber: Transcriber) -> None:
@@ -86,9 +86,7 @@ class ModelDownloadDialog(QDialog):
         layout.setSpacing(12)
 
         self._title = QLabel(f"Downloading {transcriber.model_size}...")
-        self._title.setStyleSheet(
-            f"color: {FG}; font-size: 13px; font-weight: 500;"
-        )
+        self._title.setStyleSheet(f"color: {FG}; font-size: 13px; font-weight: 500;")
         layout.addWidget(self._title)
 
         self._bar = QProgressBar()
@@ -109,9 +107,7 @@ class ModelDownloadDialog(QDialog):
         layout.addWidget(self._bar)
 
         self._status = QLabel("")
-        self._status.setStyleSheet(
-            f"color: {MUTED}; font-size: 11px;"
-        )
+        self._status.setStyleSheet(f"color: {MUTED}; font-size: 11px;")
         layout.addWidget(self._status)
 
         self._cancel_btn = QPushButton("Cancel")

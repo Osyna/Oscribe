@@ -11,6 +11,7 @@ def _ipc_address() -> str:
         return f"ipc://{runtime}/oscribe.ipc"
     return "ipc:///tmp/oscribe_service.ipc"
 
+
 IPC_ADDRESS = _ipc_address()
 
 

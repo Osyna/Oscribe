@@ -3,9 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-logger = logging.getLogger("oscribe")
-
-from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, pyqtProperty
+from PyQt6.QtCore import QEasingCurve, QPropertyAnimation, Qt, pyqtProperty, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -20,6 +18,8 @@ from PyQt6.QtWidgets import (
 from oscribe.audio.capture import AudioCapture
 from oscribe.audio.transcriber import WHISPER_MODELS
 from oscribe.config import Config
+
+logger = logging.getLogger("oscribe")
 
 # ── palette ──────────────────────────────────────────────────────
 
@@ -106,11 +106,15 @@ class _StyledComboBox(QComboBox):
     def showPopup(self) -> None:
         super().showPopup()
         popup = self.findChild(QWidget, "QComboBoxPrivateContainer")
+        _popup_css = (
+            f"background: {CONTROL_BG}; border: 1px solid {BORDER};"
+            " padding: 0; margin: 0;"
+        )
         if popup is not None:
-            popup.setStyleSheet(f"background: {CONTROL_BG}; border: 1px solid {BORDER}; padding: 0; margin: 0;")
+            popup.setStyleSheet(_popup_css)
         frame = self.view().parentWidget()
         if frame is not None:
-            frame.setStyleSheet(f"background: {CONTROL_BG}; border: 1px solid {BORDER}; padding: 0; margin: 0;")
+            frame.setStyleSheet(_popup_css)
 
 
 class ValueStepper(QWidget):
@@ -198,6 +202,7 @@ class ValueStepper(QWidget):
 
 # ── custom toggle switch ─────────────────────────────────────────
 
+
 class ToggleSwitch(QWidget):
     toggled = pyqtSignal(bool)
 
@@ -259,6 +264,7 @@ class ToggleSwitch(QWidget):
 
 # ── helpers ──────────────────────────────────────────────────────
 
+
 def _section_label(text: str) -> QLabel:
     lbl = QLabel(text.upper())
     lbl.setStyleSheet(
@@ -295,6 +301,7 @@ def _separator() -> QWidget:
 
 # ── settings window ──────────────────────────────────────────────
 
+
 class SettingsWindow(QWidget):
     config_saved = pyqtSignal(object)
     cache_cleared = pyqtSignal()
@@ -321,7 +328,8 @@ class SettingsWindow(QWidget):
         title = QLabel("SETTINGS")
         title.setStyleSheet(
             f"color: {FG}; font-size: 11px; letter-spacing: 6px; "
-            f"font-weight: 500; border: none; background: transparent; padding: 0; margin: 0;"
+            f"font-weight: 500; border: none; "
+            f"background: transparent; padding: 0; margin: 0;"
         )
         root.addWidget(title)
         root.addSpacing(24)
@@ -376,7 +384,8 @@ class SettingsWindow(QWidget):
         self.output_toggle = ToggleSwitch()
         self.output_label = QLabel("Copy to clipboard")
         self.output_label.setStyleSheet(
-            f"color: {MUTED}; font-size: 12px; border: none; background: transparent; padding: 0; margin: 0;"
+            f"color: {MUTED}; font-size: 12px; border: none; "
+            f"background: transparent; padding: 0; margin: 0;"
         )
         self.output_toggle.toggled.connect(self._on_output_toggle)
         out_row = QHBoxLayout()
@@ -398,7 +407,8 @@ class SettingsWindow(QWidget):
         self.streaming_toggle = ToggleSwitch()
         self.streaming_label = QLabel("Off")
         self.streaming_label.setStyleSheet(
-            f"color: {MUTED}; font-size: 12px; border: none; background: transparent; padding: 0; margin: 0;"
+            f"color: {MUTED}; font-size: 12px; border: none; "
+            f"background: transparent; padding: 0; margin: 0;"
         )
         self.streaming_toggle.toggled.connect(self._on_streaming_toggle)
         stream_row = QHBoxLayout()
@@ -411,7 +421,9 @@ class SettingsWindow(QWidget):
         root.addLayout(stream_row)
 
         root.addSpacing(4)
-        self.streaming_hint = _hint_label("Text appears as you speak (requires auto-type)")
+        self.streaming_hint = _hint_label(
+            "Text appears as you speak (requires auto-type)"
+        )
         root.addWidget(self.streaming_hint)
 
         root.addSpacing(12)
@@ -440,7 +452,11 @@ class SettingsWindow(QWidget):
         root.addSpacing(12)
 
         self.silence_stepper = ValueStepper(
-            value=3.0, minimum=1.0, maximum=10.0, step=0.5, suffix="s",
+            value=3.0,
+            minimum=1.0,
+            maximum=10.0,
+            step=0.5,
+            suffix="s",
         )
         root.addLayout(self._row("Silence timeout", self.silence_stepper))
 
@@ -502,19 +518,19 @@ class SettingsWindow(QWidget):
         self._clear_cache_btn = QPushButton("Clear model cache")
         self._clear_cache_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._clear_cache_btn.setFixedHeight(32)
-        self._clear_cache_btn.setStyleSheet(f"""
-            QPushButton {{
+        self._clear_cache_btn.setStyleSheet("""
+            QPushButton {
                 background: transparent;
                 color: #CC4444;
                 border: 1px solid #CC4444;
                 padding: 4px 14px;
                 font-size: 12px;
-            }}
-            QPushButton:hover {{
+            }
+            QPushButton:hover {
                 background: #1A0000;
                 border-color: #FF5555;
                 color: #FF5555;
-            }}
+            }
         """)
         self._clear_cache_btn.clicked.connect(self._clear_model_cache)
         root.addWidget(self._clear_cache_btn)
@@ -582,10 +598,17 @@ class SettingsWindow(QWidget):
 
     def _populate_languages(self) -> None:
         for name, code in {
-            "English": "en", "French": "fr", "German": "de",
-            "Spanish": "es", "Italian": "it", "Portuguese": "pt",
-            "Dutch": "nl", "Polish": "pl", "Russian": "ru",
-            "Japanese": "ja", "Chinese": "zh",
+            "English": "en",
+            "French": "fr",
+            "German": "de",
+            "Spanish": "es",
+            "Italian": "it",
+            "Portuguese": "pt",
+            "Dutch": "nl",
+            "Polish": "pl",
+            "Russian": "ru",
+            "Japanese": "ja",
+            "Chinese": "zh",
         }.items():
             self.lang_combo.addItem(name, code)
 
@@ -636,18 +659,23 @@ class SettingsWindow(QWidget):
 
     def _update_cache_size(self) -> None:
         try:
-            from huggingface_hub import scan_cache_dir
             from faster_whisper.utils import _MODELS
+            from huggingface_hub import scan_cache_dir
+
             whisper_repos = set(_MODELS.values())
             info = scan_cache_dir()
-            total = sum(r.size_on_disk for r in info.repos if r.repo_id in whisper_repos)
+            total = sum(
+                r.size_on_disk for r in info.repos if r.repo_id in whisper_repos
+            )
             count = sum(1 for r in info.repos if r.repo_id in whisper_repos)
             if total > 0:
                 if total >= 1e9:
                     size_str = f"{total / 1e9:.1f} GB"
                 else:
                     size_str = f"{total / 1e6:.0f} MB"
-                self._cache_size_label.setText(f"{count} model{'s' if count != 1 else ''}, {size_str}")
+                self._cache_size_label.setText(
+                    f"{count} model{'s' if count != 1 else ''}, {size_str}"
+                )
             else:
                 self._cache_size_label.setText("No models cached")
         except Exception:
@@ -655,8 +683,9 @@ class SettingsWindow(QWidget):
 
     def _clear_model_cache(self) -> None:
         try:
-            from huggingface_hub import scan_cache_dir
             from faster_whisper.utils import _MODELS
+            from huggingface_hub import scan_cache_dir
+
             whisper_repos = set(_MODELS.values())
             info = scan_cache_dir()
 
@@ -682,7 +711,8 @@ class SettingsWindow(QWidget):
             reply = QMessageBox.question(
                 self,
                 "oscribe",
-                f"Delete {count} cached model{'s' if count != 1 else ''} ({size_str})?\n\n"
+                f"Delete {count} cached model{'s' if count != 1 else ''}"
+                f" ({size_str})?\n\n"
                 "The active model will be re-downloaded on next use.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Cancel,

@@ -9,14 +9,13 @@ import sounddevice as sd
 
 logger = logging.getLogger("oscribe")
 
-_TARGET_RATE = 16_000 # 16kHz default for Whisper
+_TARGET_RATE = 16_000  # 16kHz default for Whisper
 
 
 class AudioCapture:
-
     @staticmethod
     def list_devices() -> list[dict]:
-        return sd.query_devices() 
+        return sd.query_devices()
 
     def __init__(
         self,
