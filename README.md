@@ -8,6 +8,7 @@ Fast speech-to-text dictation for Linux with system tray integration. Powered by
 
 Press a hotkey, speak, and the transcribed text is either typed into the focused window or copied to your clipboard. Works across Wayland compositors (Hyprland, Sway, KDE, GNOME) and X11.
 
+Webiste : [https://oscribe.osyna.com/](https://oscribe.osyna.com/)
 
 ## Features
 
